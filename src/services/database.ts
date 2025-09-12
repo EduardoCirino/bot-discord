@@ -1,12 +1,12 @@
 import { Database } from 'bun:sqlite';
-import type { 
-  InviteData, 
-  InviteUsage, 
-  UserStats, 
-  AdminInviteInfo, 
+import type {
+  InviteData,
+  InviteUsage,
+  UserStats,
+  AdminInviteInfo,
   LeaderboardEntry,
   DatabaseResult,
-  InviteUsageResult
+  InviteUsageResult,
 } from '../types';
 
 export class DatabaseService {
@@ -55,11 +55,13 @@ export class DatabaseService {
       // Create indexes for better performance
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_invites_creator_id ON invites(creator_id)`);
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_invites_code ON invites(code)`);
-      this.db.run(`CREATE INDEX IF NOT EXISTS idx_invite_usages_invite_id ON invite_usages(invite_id)`);
+      this.db.run(
+        `CREATE INDEX IF NOT EXISTS idx_invite_usages_invite_id ON invite_usages(invite_id)`
+      );
       this.db.run(`CREATE INDEX IF NOT EXISTS idx_invite_usages_user_id ON invite_usages(user_id)`);
-      this.db.run(`CREATE INDEX IF NOT EXISTS idx_invite_usages_is_active ON invite_usages(is_active)`);
-      
-
+      this.db.run(
+        `CREATE INDEX IF NOT EXISTS idx_invite_usages_is_active ON invite_usages(is_active)`
+      );
     } catch (error) {
       // Constraints might already exist, log but continue
       console.warn('Some database constraints may already exist:', error);
@@ -73,7 +75,14 @@ export class DatabaseService {
       this.db.run(
         `INSERT INTO invites (id, creator_id, code, max_uses, expires_at, channel_id)
          VALUES (?, ?, ?, ?, ?, ?)`,
-        [id, invite.creatorId, invite.code, invite.maxUses || null, invite.expiresAt?.toISOString() || null, invite.channelId]
+        [
+          id,
+          invite.creatorId,
+          invite.code,
+          invite.maxUses || null,
+          invite.expiresAt?.toISOString() || null,
+          invite.channelId,
+        ]
       );
       return id;
     } catch (error: unknown) {
@@ -88,7 +97,9 @@ export class DatabaseService {
             return existingInvite.id;
           } else {
             // If it belongs to a different creator, this is a genuine conflict
-            throw new Error(`Invite code '${invite.code}' already exists and belongs to another user`);
+            throw new Error(
+              `Invite code '${invite.code}' already exists and belongs to another user`
+            );
           }
         }
         // If no existing invite found, the constraint might be on a different field
@@ -100,9 +111,11 @@ export class DatabaseService {
   }
 
   async getInviteByCode(code: string): Promise<InviteData | null> {
-    const result = this.db.query('SELECT * FROM invites WHERE code = ?').get(code) as DatabaseResult | null;
+    const result = this.db
+      .query('SELECT * FROM invites WHERE code = ?')
+      .get(code) as DatabaseResult | null;
     if (!result) return null;
-    
+
     return {
       id: result.id,
       creatorId: result.creator_id,
@@ -111,7 +124,7 @@ export class DatabaseService {
       maxUses: result.max_uses || undefined,
       expiresAt: result.expires_at ? new Date(result.expires_at) : undefined,
       createdAt: new Date(result.created_at),
-      channelId: result.channel_id
+      channelId: result.channel_id,
     };
   }
 
@@ -120,7 +133,9 @@ export class DatabaseService {
   }
 
   async getUserInvites(userId: string): Promise<InviteData[]> {
-    const results = this.db.query('SELECT * FROM invites WHERE creator_id = ?').all(userId) as DatabaseResult[];
+    const results = this.db
+      .query('SELECT * FROM invites WHERE creator_id = ?')
+      .all(userId) as DatabaseResult[];
     return results.map(result => ({
       id: result.id,
       creatorId: result.creator_id,
@@ -129,24 +144,23 @@ export class DatabaseService {
       maxUses: result.max_uses || undefined,
       expiresAt: result.expires_at ? new Date(result.expires_at) : undefined,
       createdAt: new Date(result.created_at),
-      channelId: result.channel_id
+      channelId: result.channel_id,
     }));
   }
 
   // Usage operations
   async recordInviteUsage(inviteId: string, userId: string) {
     // Check if this user has already been recorded for this invite
-    const existingUsage = this.db.query(
-      'SELECT id, is_active FROM invite_usages WHERE invite_id = ? AND user_id = ?'
-    ).get(inviteId, userId) as { id: string; is_active: number } | undefined;
+    const existingUsage = this.db
+      .query('SELECT id, is_active FROM invite_usages WHERE invite_id = ? AND user_id = ?')
+      .get(inviteId, userId) as { id: string; is_active: number } | undefined;
 
     if (existingUsage) {
       // If user was previously inactive (left), reactivate them
       if (!existingUsage.is_active) {
-        this.db.run(
-          'UPDATE invite_usages SET is_active = 1, left_at = NULL WHERE id = ?',
-          [existingUsage.id]
-        );
+        this.db.run('UPDATE invite_usages SET is_active = 1, left_at = NULL WHERE id = ?', [
+          existingUsage.id,
+        ]);
         // Increment invite uses since user is rejoining
         this.db.run('UPDATE invites SET uses = uses + 1 WHERE id = ?', [inviteId]);
       }
@@ -165,9 +179,9 @@ export class DatabaseService {
       // Handle any other potential constraint violations
       if (sqliteError.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         // Double-check in case of race condition
-        const doubleCheck = this.db.query(
-          'SELECT id FROM invite_usages WHERE invite_id = ? AND user_id = ?'
-        ).get(inviteId, userId) as { id: string } | undefined;
+        const doubleCheck = this.db
+          .query('SELECT id FROM invite_usages WHERE invite_id = ? AND user_id = ?')
+          .get(inviteId, userId) as { id: string } | undefined;
         if (doubleCheck) {
           return doubleCheck.id;
         }
@@ -177,14 +191,16 @@ export class DatabaseService {
   }
 
   async getInviteUsages(inviteId: string): Promise<InviteUsage[]> {
-    const usages = this.db.query('SELECT * FROM invite_usages WHERE invite_id = ?').all(inviteId) as InviteUsageResult[];
+    const usages = this.db
+      .query('SELECT * FROM invite_usages WHERE invite_id = ?')
+      .all(inviteId) as InviteUsageResult[];
     return usages.map(usage => ({
       id: usage.id,
       inviteId: usage.invite_id,
       userId: usage.user_id,
       joinedAt: new Date(usage.joined_at),
       leftAt: usage.left_at ? new Date(usage.left_at) : undefined,
-      isActive: Boolean(usage.is_active)
+      isActive: Boolean(usage.is_active),
     }));
   }
 
@@ -195,9 +211,9 @@ export class DatabaseService {
     );
 
     // Decrement invite uses for each invite this user was active in
-    const affectedUsages = this.db.query(
-      'SELECT invite_id FROM invite_usages WHERE user_id = ? AND is_active = 0'
-    ).all(userId) as { invite_id: string }[];
+    const affectedUsages = this.db
+      .query('SELECT invite_id FROM invite_usages WHERE user_id = ? AND is_active = 0')
+      .all(userId) as { invite_id: string }[];
 
     for (const usage of affectedUsages) {
       this.db.run('UPDATE invites SET uses = MAX(0, uses - 1) WHERE id = ?', [usage.invite_id]);
@@ -218,23 +234,29 @@ export class DatabaseService {
       totalInvites: invites.length,
       totalUses,
       activeUses,
-      invites
+      invites,
     };
   }
 
   async getActiveUsesForUser(userId: string) {
-    const result = this.db.query(`
+    const result = this.db
+      .query(
+        `
       SELECT COUNT(*) as active_count
       FROM invite_usages iu
       JOIN invites i ON iu.invite_id = i.id
       WHERE i.creator_id = ? AND iu.is_active = 1
-    `).get(userId) as { active_count: number } | undefined;
+    `
+      )
+      .get(userId) as { active_count: number } | undefined;
 
     return result?.active_count || 0;
   }
 
   async getLeaderboard(limit: number = 10): Promise<LeaderboardEntry[]> {
-    const results = this.db.query(`
+    const results = this.db
+      .query(
+        `
       SELECT
         i.creator_id,
         COUNT(DISTINCT i.id) as total_invites,
@@ -245,13 +267,17 @@ export class DatabaseService {
       GROUP BY i.creator_id
       ORDER BY total_uses DESC
       LIMIT ?
-    `).all(limit) as LeaderboardEntry[];
+    `
+      )
+      .all(limit) as LeaderboardEntry[];
 
     return results;
   }
 
   async getAllInvitesForAdmin(): Promise<AdminInviteInfo[]> {
-    const invites = this.db.query(`
+    const invites = this.db
+      .query(
+        `
       SELECT
         i.*,
         COUNT(CASE WHEN iu.is_active = 1 THEN 1 END) as active_uses
@@ -259,7 +285,9 @@ export class DatabaseService {
       LEFT JOIN invite_usages iu ON i.id = iu.invite_id
       GROUP BY i.id
       ORDER BY i.created_at DESC
-    `).all() as Array<DatabaseResult & { active_uses: number }>;
+    `
+      )
+      .all() as Array<DatabaseResult & { active_uses: number }>;
 
     return invites.map(invite => ({
       id: invite.id,
@@ -270,7 +298,7 @@ export class DatabaseService {
       maxUses: invite.max_uses || undefined,
       expiresAt: invite.expires_at ? new Date(invite.expires_at) : undefined,
       createdAt: new Date(invite.created_at),
-      channelId: invite.channel_id
+      channelId: invite.channel_id,
     }));
   }
 
@@ -282,7 +310,7 @@ export class DatabaseService {
 
     return {
       invite,
-      usages
+      usages,
     };
   }
 

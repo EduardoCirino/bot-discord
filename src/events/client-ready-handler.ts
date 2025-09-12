@@ -6,14 +6,13 @@ import type { Event } from '../types';
 export class ClientReadyHandler implements Event<Events.ClientReady> {
   name = Events.ClientReady as const;
   once = true as const;
-  
+
   constructor(
-    private database: DatabaseService, 
+    private database: DatabaseService,
     private logger: Logger
   ) {}
 
   execute = async (client: Client<true>): Promise<void> => {
-    
     try {
       this.logger.info('Bot is ready', { username: client.user?.tag });
 
@@ -22,7 +21,7 @@ export class ClientReadyHandler implements Event<Events.ClientReady> {
         try {
           const invites = await guild.invites.fetch();
           const cachedInvites = new Map();
-          invites.forEach((invite) => cachedInvites.set(invite.code, { uses: invite.uses || 0 }));
+          invites.forEach(invite => cachedInvites.set(invite.code, { uses: invite.uses || 0 }));
           if (!client.invites) client.invites = new Map();
           client.invites.set(guild.id, cachedInvites);
         } catch (error) {

@@ -1,8 +1,10 @@
 import { Client, GatewayIntentBits, Events, type Interaction } from 'discord.js';
 import { DatabaseService } from './src/services/database';
 import { Logger } from './src/services/logger';
-import { DynamicEventRegistry } from './src/utils/dynamicEventRegistry';
-import { DynamicCommandRegistry } from './src/utils/dynamicCommandRegistry';
+import { DynamicEventRegistry } from './src/utils/dynamic-event-registry.ts';
+import { DynamicCommandRegistry } from './src/utils/dynamic-command-registry.ts';
+import {CommandHandler} from "./src/services/command-handler.ts";
+import {PermissionService} from "./src/services/permissions.ts";
 
 // Load environment variables
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -37,6 +39,9 @@ async function main() {
   await eventRegistry.loadEvents();
   eventRegistry.registerEvents(client);
 
+  const permissionService = new PermissionService(logger);
+  const commandHandler = new CommandHandler(permissionService, logger);
+
   // Handle slash command interactions
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (!interaction.isChatInputCommand()) return;
@@ -49,7 +54,7 @@ async function main() {
     }
 
     try {
-      await command.execute(interaction);
+      await commandHandler.execute(command, interaction)
     } catch (error) {
       logger.error('Command execution failed', { error, commandName: interaction.commandName });
       if (interaction.replied || interaction.deferred) {

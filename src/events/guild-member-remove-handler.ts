@@ -5,14 +5,13 @@ import type { Event } from '../types';
 
 export class GuildMemberRemoveHandler implements Event<Events.GuildMemberRemove> {
   name = Events.GuildMemberRemove as const;
-  
+
   constructor(
-    private database: DatabaseService, 
+    private database: DatabaseService,
     private logger: Logger
   ) {}
 
   execute = async (member: GuildMember | PartialGuildMember): Promise<void> => {
-    
     try {
       // Mark the user as left in all their invite usages
       const wasActive = await this.database.markUserAsLeft(member.id);

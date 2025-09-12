@@ -5,14 +5,13 @@ import type { Event } from '../types';
 
 export class InviteCreateHandler implements Event<Events.InviteCreate> {
   name = Events.InviteCreate as const;
-  
+
   constructor(
-    private database: DatabaseService, 
+    private database: DatabaseService,
     private logger: Logger
   ) {}
 
   execute = async (invite: Invite): Promise<void> => {
-    
     try {
       // Skip if this invite was created by the bot itself
       if (invite.inviterId === invite.client.user?.id) {
@@ -22,7 +21,9 @@ export class InviteCreateHandler implements Event<Events.InviteCreate> {
 
       // If inviterId is null or empty, this might be a bot-created invite, skip it
       if (!invite.inviterId) {
-        this.logger.debug('Skipping invite without inviter ID (likely bot-created)', { inviteCode: invite.code });
+        this.logger.debug('Skipping invite without inviter ID (likely bot-created)', {
+          inviteCode: invite.code,
+        });
         return;
       }
 
@@ -39,7 +40,7 @@ export class InviteCreateHandler implements Event<Events.InviteCreate> {
           this.logger.debug('Skipping recently created invite to prevent double storage', {
             inviteCode: invite.code,
             existingCreator: existingInvite.creatorId,
-            timeDiff
+            timeDiff,
           });
           return;
         }
@@ -50,15 +51,15 @@ export class InviteCreateHandler implements Event<Events.InviteCreate> {
         code: invite.code,
         maxUses: invite.maxUses || undefined,
         expiresAt: invite.expiresAt || undefined,
-        channelId: invite.channelId || ''
+        channelId: invite.channelId || '',
       });
-      
+
       this.logger.inviteCreated(invite.inviterId, invite.code, invite.channelId || '');
     } catch (error) {
-      this.logger.error('Failed to handle invite creation', { 
-        error, 
-        inviteCode: invite.code, 
-        inviterId: invite.inviterId 
+      this.logger.error('Failed to handle invite creation', {
+        error,
+        inviteCode: invite.code,
+        inviterId: invite.inviterId,
       });
     }
   };

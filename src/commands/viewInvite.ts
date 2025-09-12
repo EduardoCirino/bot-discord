@@ -1,22 +1,23 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
-import type { Command } from '../types';
+import { BaseCommand } from '../types';
 
-export class ViewInviteCommand implements Command {
+export class ViewInviteCommand implements BaseCommand {
   name = 'view-invite';
   description = 'View detailed information about a specific invite';
 
-  constructor(private database: DatabaseService, private logger: Logger) {}
+  constructor(
+    private database: DatabaseService,
+    private logger: Logger
+  ) {}
 
   get data() {
     return new SlashCommandBuilder()
       .setName(this.name)
       .setDescription(this.description)
       .addStringOption(option =>
-        option.setName('code')
-          .setDescription('The invite code to view')
-          .setRequired(true)
+        option.setName('code').setDescription('The invite code to view').setRequired(true)
       );
   }
 
@@ -29,7 +30,7 @@ export class ViewInviteCommand implements Command {
       if (!inviteDetails) {
         await interaction.reply({
           content: '❌ Invite code not found.',
-          flags: 64
+          flags: 64,
         });
         return;
       }
@@ -43,21 +44,33 @@ export class ViewInviteCommand implements Command {
       if (!isCreator && !isAdmin) {
         await interaction.reply({
           content: '❌ You can only view invites you created.',
-          flags: 64
+          flags: 64,
         });
         return;
       }
 
       const embed = new EmbedBuilder()
         .setTitle(`📋 Invite Details: \`${invite.code}\``)
-        .setColor(0x4ECDC4)
+        .setColor(0x4ecdc4)
         .addFields(
           { name: 'Creator', value: `<@${invite.creatorId}>`, inline: true },
           { name: 'Channel', value: `<#${invite.channelId}>`, inline: true },
           { name: 'Created', value: invite.createdAt.toLocaleDateString(), inline: true },
-          { name: 'Uses', value: `${invite.uses}${invite.maxUses ? `/${invite.maxUses}` : ''}`, inline: true },
-          { name: 'Expires', value: invite.expiresAt ? invite.expiresAt.toLocaleDateString() : 'Never', inline: true },
-          { name: 'Active Users', value: usages.filter(u => u.isActive).length.toString(), inline: true }
+          {
+            name: 'Uses',
+            value: `${invite.uses}${invite.maxUses ? `/${invite.maxUses}` : ''}`,
+            inline: true,
+          },
+          {
+            name: 'Expires',
+            value: invite.expiresAt ? invite.expiresAt.toLocaleDateString() : 'Never',
+            inline: true,
+          },
+          {
+            name: 'Active Users',
+            value: usages.filter(u => u.isActive).length.toString(),
+            inline: true,
+          }
         )
         .setTimestamp();
 
@@ -66,26 +79,31 @@ export class ViewInviteCommand implements Command {
         const leftUsers = usages.filter(u => !u.isActive);
 
         if (activeUsers.length > 0) {
-          const activeList = activeUsers.slice(0, 10).map(usage =>
-            `<@${usage.userId}> - Joined ${usage.joinedAt.toLocaleDateString()}`
-          ).join('\n');
+          const activeList = activeUsers
+            .slice(0, 10)
+            .map(usage => `<@${usage.userId}> - Joined ${usage.joinedAt.toLocaleDateString()}`)
+            .join('\n');
 
           embed.addFields({
             name: `Active Users (${activeUsers.length})`,
             value: activeList,
-            inline: false
+            inline: false,
           });
         }
 
         if (leftUsers.length > 0) {
-          const leftList = leftUsers.slice(0, 10).map(usage =>
-            `<@${usage.userId}> - Joined ${usage.joinedAt.toLocaleDateString()}, Left ${usage.leftAt?.toLocaleDateString() || 'Unknown'}`
-          ).join('\n');
+          const leftList = leftUsers
+            .slice(0, 10)
+            .map(
+              usage =>
+                `<@${usage.userId}> - Joined ${usage.joinedAt.toLocaleDateString()}, Left ${usage.leftAt?.toLocaleDateString() || 'Unknown'}`
+            )
+            .join('\n');
 
           embed.addFields({
             name: `Users Who Left (${leftUsers.length})`,
             value: leftList,
-            inline: false
+            inline: false,
           });
         }
 
@@ -93,7 +111,11 @@ export class ViewInviteCommand implements Command {
           embed.setFooter({ text: `Showing 20/${usages.length} users. Use pagination for more.` });
         }
       } else {
-        embed.addFields({ name: 'Users', value: 'No users have joined with this invite yet.', inline: false });
+        embed.addFields({
+          name: 'Users',
+          value: 'No users have joined with this invite yet.',
+          inline: false,
+        });
       }
 
       this.logger.commandExecuted(this.name, interaction.user.id, interaction.guild?.id);
@@ -102,7 +124,7 @@ export class ViewInviteCommand implements Command {
       this.logger.error('Failed to view invite', { error, userId: interaction.user.id });
       await interaction.reply({
         content: '❌ Failed to retrieve invite details. Please try again.',
-        flags: 64
+        flags: 64,
       });
     }
   }

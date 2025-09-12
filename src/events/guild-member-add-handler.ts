@@ -5,14 +5,13 @@ import type { Event } from '../types';
 
 export class GuildMemberAddHandler implements Event<Events.GuildMemberAdd> {
   name = Events.GuildMemberAdd as const;
-  
+
   constructor(
-    private database: DatabaseService, 
+    private database: DatabaseService,
     private logger: Logger
   ) {}
 
   execute = async (member: GuildMember): Promise<void> => {
-    
     try {
       // Get the invite used by checking recent invites
       const invites: Collection<string, Invite> = await member.guild.invites.fetch();

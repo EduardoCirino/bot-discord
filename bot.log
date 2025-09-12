@@ -114,3 +114,75 @@
 [2025-09-12T16:22:13.719Z] INFO: Successfully reloaded application (/) commands.
 [2025-09-12T16:22:14.541Z] INFO: Bot logged in successfully
 [2025-09-12T16:22:14.550Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T17:07:43.384Z] INFO: Loaded 7 commands
+[2025-09-12T17:07:43.388Z] INFO: Loaded 4 events
+[2025-09-12T17:07:43.388Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T17:07:43.684Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T17:07:44.415Z] INFO: Bot logged in successfully
+[2025-09-12T17:07:44.421Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T17:12:58.120Z] INFO: Received SIGINT, shutting down gracefully...
+[2025-09-12T17:28:11.798Z] INFO: Loaded 7 commands
+[2025-09-12T17:28:11.802Z] INFO: Loaded 4 events
+[2025-09-12T17:28:11.802Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T17:28:12.101Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T17:28:12.749Z] INFO: Bot logged in successfully
+[2025-09-12T17:28:12.754Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T17:28:21.835Z] INFO: Command permission denied | {"command":"admin-invites","userId":"314640666623868928","reason":"This command requires administrator permissions."}
+[2025-09-12T18:00:48.022Z] INFO: Received SIGINT, shutting down gracefully...
+[2025-09-12T18:00:53.139Z] INFO: Loaded 7 commands
+[2025-09-12T18:00:53.141Z] INFO: Loaded 4 events
+[2025-09-12T18:00:53.141Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:00:53.420Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T18:00:54.149Z] INFO: Bot logged in successfully
+[2025-09-12T18:00:54.153Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T18:01:01.791Z] INFO: Command permission denied | {"command":"admin-invites","userId":"314640666623868928","reason":"This command requires administrator permissions."}
+[2025-09-12T18:01:26.783Z] INFO: Invite created | {"creatorId":"314640666623868928","code":"BsfPncFV8a","channelId":"1403162656780849175"}
+[2025-09-12T18:01:27.075Z] INFO: Command executed | {"command":"create-invite","userId":"314640666623868928","guildId":"1403162654503342222"}
+[2025-09-12T18:01:37.554Z] INFO: Command executed | {"command":"check-invites","userId":"314640666623868928","guildId":"1403162654503342222"}
+[2025-09-12T18:01:55.096Z] INFO: Command executed | {"command":"view-invite","userId":"314640666623868928","guildId":"1403162654503342222"}
+[2025-09-12T18:24:39.309Z] INFO: Received SIGINT, shutting down gracefully...
+[2025-09-12T18:24:42.604Z] INFO: Loaded 7 commands
+[2025-09-12T18:24:42.606Z] INFO: Loaded 4 events
+[2025-09-12T18:24:42.606Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:24:42.947Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T18:24:43.777Z] INFO: Bot logged in successfully
+[2025-09-12T18:24:43.781Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T18:25:17.945Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:17.946Z] INFO: Loaded 4 events
+[2025-09-12T18:25:17.946Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:25:18.246Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T18:25:18.862Z] INFO: Bot logged in successfully
+[2025-09-12T18:25:18.865Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T18:25:41.494Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:41.497Z] INFO: Loaded 4 events
+[2025-09-12T18:25:41.498Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:25:41.823Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T18:25:42.402Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:42.403Z] INFO: Loaded 4 events
+[2025-09-12T18:25:42.403Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:25:42.466Z] INFO: Bot logged in successfully
+[2025-09-12T18:25:42.467Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T18:25:44.875Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:44.879Z] INFO: Loaded 4 events
+[2025-09-12T18:25:44.879Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:25:45.043Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:45.047Z] INFO: Loaded 4 events
+[2025-09-12T18:25:45.047Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:25:51.575Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:51.578Z] INFO: Loaded 4 events
+[2025-09-12T18:25:51.579Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:25:51.793Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:51.795Z] INFO: Loaded 4 events
+[2025-09-12T18:25:51.796Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:25:51.812Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T18:25:52.646Z] INFO: Bot logged in successfully
+[2025-09-12T18:25:52.648Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}
+[2025-09-12T18:25:57.595Z] INFO: Loaded 7 commands
+[2025-09-12T18:25:57.597Z] INFO: Loaded 4 events
+[2025-09-12T18:25:57.597Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:26:13.528Z] INFO: Loaded 7 commands
+[2025-09-12T18:26:13.529Z] INFO: Loaded 4 events
+[2025-09-12T18:26:13.529Z] INFO: Started refreshing application (/) commands.
+[2025-09-12T18:26:18.516Z] INFO: Successfully reloaded application (/) commands.
+[2025-09-12T18:26:19.160Z] INFO: Bot logged in successfully
+[2025-09-12T18:26:19.163Z] INFO: Bot is ready | {"username":"Invite Tracking#0422"}

@@ -1,8 +1,8 @@
-import type { 
-  ChatInputCommandInteraction, 
-  SlashCommandBuilder, 
+import type {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
   SlashCommandOptionsOnlyBuilder,
-  ClientEvents
+  ClientEvents,
 } from 'discord.js';
 
 // Business Logic Types
@@ -97,7 +97,10 @@ export interface PermissionResult {
 }
 
 export interface PermissionValidator {
-  validate(interaction: ChatInputCommandInteraction, config: PermissionConfig): Promise<PermissionResult>;
+  validate(
+    interaction: ChatInputCommandInteraction,
+    config: PermissionConfig
+  ): Promise<PermissionResult>;
 }
 
 // Enhanced Command Interface with flexible dependencies
@@ -117,19 +120,6 @@ export abstract class BaseCommand implements Command {
 
   abstract execute(interaction: ChatInputCommandInteraction): Promise<void>;
   abstract get data(): SlashCommandBuilder | SlashCommandOptionsOnlyBuilder;
-}
-
-// Command factory type for flexible instantiation
-export interface CommandFactory {
-  create(dependencies: any): Command;
-}
-
-// Command metadata for registration
-export interface CommandMetadata {
-  name: string;
-  description: string;
-  dependencies?: string[];
-  factory: CommandFactory;
 }
 
 // Generic Event System

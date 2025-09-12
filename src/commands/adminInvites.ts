@@ -1,23 +1,23 @@
-import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder, PermissionFlagsBits } from 'discord.js';
+import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
-import type { Command } from '../types';
+import { BaseCommand } from '../types';
 
-export class AdminInvitesCommand implements Command {
+export class AdminInvitesCommand implements BaseCommand {
   name = 'admin-invites';
   description = 'View all created invites (Admin only)';
   permissions = {
     level: 'admin' as const,
-    guildOnly: true
+    guildOnly: true,
   };
 
-  constructor(private database: DatabaseService, private logger: Logger) {}
+  constructor(
+    private database: DatabaseService,
+    private logger: Logger
+  ) {}
 
   get data() {
-    return new SlashCommandBuilder()
-      .setName(this.name)
-      .setDescription(this.description)
-      .setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+    return new SlashCommandBuilder().setName(this.name).setDescription(this.description);
   }
 
   async execute(interaction: ChatInputCommandInteraction) {
@@ -27,14 +27,14 @@ export class AdminInvitesCommand implements Command {
       if (invites.length === 0) {
         await interaction.reply({
           content: 'No invites have been created yet.',
-          flags: 64
+          flags: 64,
         });
         return;
       }
 
       const embed = new EmbedBuilder()
         .setTitle('📊 All Created Invites')
-        .setColor(0xFF6B6B)
+        .setColor(0xff6b6b)
         .setDescription(`Total invites: ${invites.length}`)
         .setTimestamp();
 
@@ -52,7 +52,8 @@ export class AdminInvitesCommand implements Command {
       let creatorCount = 0;
 
       for (const [creatorId, creatorInvites] of invitesByCreator) {
-        if (creatorCount >= 10) { // Limit to prevent embed from being too long
+        if (creatorCount >= 10) {
+          // Limit to prevent embed from being too long
           description += `\n... and ${invitesByCreator.size - creatorCount} more creators`;
           break;
         }
@@ -71,9 +72,12 @@ export class AdminInvitesCommand implements Command {
       // Show recent invites
       const recentInvites = invites.slice(0, 5);
       if (recentInvites.length > 0) {
-        const recentList = recentInvites.map(invite =>
-          `\`${invite.code}\` by <@${invite.creatorId}> - ${invite.activeUses}/${invite.uses} uses`
-        ).join('\n');
+        const recentList = recentInvites
+          .map(
+            invite =>
+              `\`${invite.code}\` by <@${invite.creatorId}> - ${invite.activeUses}/${invite.uses} uses`
+          )
+          .join('\n');
 
         embed.addFields({ name: 'Recent Invites', value: recentList, inline: false });
       }
@@ -84,7 +88,7 @@ export class AdminInvitesCommand implements Command {
       this.logger.error('Failed to get admin invites', { error, userId: interaction.user.id });
       await interaction.reply({
         content: '❌ Failed to retrieve invite data. Please try again.',
-        flags: 64
+        flags: 64,
       });
     }
   }
