@@ -3,8 +3,8 @@ import { DatabaseService } from './src/services/database';
 import { Logger } from './src/services/logger';
 import { DynamicEventRegistry } from './src/utils/dynamic-event-registry.ts';
 import { DynamicCommandRegistry } from './src/utils/dynamic-command-registry.ts';
-import {CommandHandler} from "./src/services/command-handler.ts";
-import {PermissionService} from "./src/services/permissions.ts";
+import { CommandHandler } from './src/services/command-handler.ts';
+import { PermissionService } from './src/services/permissions.ts';
 
 // Load environment variables
 const TOKEN = process.env.DISCORD_TOKEN;
@@ -26,8 +26,8 @@ async function main() {
     intents: [
       GatewayIntentBits.Guilds,
       GatewayIntentBits.GuildMembers,
-      GatewayIntentBits.GuildInvites
-    ]
+      GatewayIntentBits.GuildInvites,
+    ],
   });
 
   // Initialize dynamic command registry
@@ -43,6 +43,7 @@ async function main() {
   const commandHandler = new CommandHandler(permissionService, logger);
 
   // Handle slash command interactions
+  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (!interaction.isChatInputCommand()) return;
 
@@ -54,13 +55,19 @@ async function main() {
     }
 
     try {
-      await commandHandler.execute(command, interaction)
+      await commandHandler.execute(command, interaction);
     } catch (error) {
       logger.error('Command execution failed', { error, commandName: interaction.commandName });
       if (interaction.replied || interaction.deferred) {
-        await interaction.followUp({ content: 'There was an error while executing this command!', ephemeral: true });
+        await interaction.followUp({
+          content: 'There was an error while executing this command!',
+          ephemeral: true,
+        });
       } else {
-        await interaction.reply({ content: 'There was an error while executing this command!', ephemeral: true });
+        await interaction.reply({
+          content: 'There was an error while executing this command!',
+          ephemeral: true,
+        });
       }
     }
   });
@@ -75,7 +82,7 @@ async function main() {
 
   // Login to Discord
   try {
-    await client.login(TOKEN!);
+    await client.login(TOKEN);
     logger.info('Bot logged in successfully');
   } catch (error) {
     logger.error('Failed to login', { error });
@@ -86,19 +93,19 @@ async function main() {
   process.on('SIGINT', () => {
     logger.info('Received SIGINT, shutting down gracefully...');
     database.close();
-    client.destroy();
+    void client.destroy();
     process.exit(0);
   });
 
   process.on('SIGTERM', () => {
     logger.info('Received SIGTERM, shutting down gracefully...');
     database.close();
-    client.destroy();
+    void client.destroy();
     process.exit(0);
   });
 }
 
-main().catch((error) => {
+main().catch(error => {
   console.error('Unhandled error:', error);
   process.exit(1);
 });
