@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { Client, GatewayIntentBits, Events, type Interaction } from 'discord.js';
 import { DatabaseService } from './src/services/database';
 import { Logger } from './src/services/logger';
@@ -18,8 +19,8 @@ if (!TOKEN || !CLIENT_ID) {
 
 async function main() {
   // Initialize services
-  const logger = new Logger('./bot.log', process.env.LOG_LEVEL === 'debug' ? 0 : 1);
-  const database = new DatabaseService('./invites.db');
+  const logger = new Logger();
+  const database = new DatabaseService();
 
   // Initialize Discord client
   const client = new Client({
