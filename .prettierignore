@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Database files
+*.db
+invites.db
+
+# Log files
+*.log
+bot.log
+
+# Environment files
+.env
+.env.local
+
+# Lock files
+bun.lock
+package-lock.json
+yarn.lock
+
+# Generated files
+*.min.js
+*.min.css
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Configuration files that shouldn't be formatted
+eslint.config.js
+prettier.config.js
+tsconfig.json
