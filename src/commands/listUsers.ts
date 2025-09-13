@@ -1,16 +1,18 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
-import type { BaseCommand } from '../types';
+import { BaseCommand } from '../types';
 
-export class ListUsersCommand implements BaseCommand {
+export class ListUsersCommand extends BaseCommand {
   name = 'list-users';
   description = 'List users who joined using your invites';
 
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder()

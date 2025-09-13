@@ -1,16 +1,18 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
-import type { BaseCommand } from '../types';
+import { BaseCommand } from '../types';
 
-export class LeaderboardCommand implements BaseCommand {
+export class LeaderboardCommand extends BaseCommand {
   name = 'leaderboard';
   description = 'Show the invite leaderboard';
 
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder()

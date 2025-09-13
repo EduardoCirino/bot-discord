@@ -3,14 +3,16 @@ import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
 import { BaseCommand } from '../types';
 
-export class ViewInviteCommand implements BaseCommand {
+export class ViewInviteCommand extends BaseCommand {
   name = 'view-invite';
   description = 'View detailed information about a specific invite';
 
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder()

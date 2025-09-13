@@ -1,14 +1,14 @@
 import { SlashCommandBuilder, ChatInputCommandInteraction, EmbedBuilder } from 'discord.js';
 import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
-import type { BaseCommand } from '../types';
+import { BaseCommand } from '../types';
 
-export class DemoPermissionsCommand implements BaseCommand {
-  name = 'demo-permissions';
-  description = 'Demonstrates different permission configurations';
+export class DemoPermissionsCommand extends BaseCommand {
+  override name = 'demo-permissions';
+  override description = 'Demonstrates different permission configurations';
 
   // Example of complex permission config with custom validation
-  permissions = {
+  override permissions = {
     level: 'moderator' as const,
     guildOnly: true,
     customCheck: (_interaction: ChatInputCommandInteraction) => {
@@ -22,7 +22,9 @@ export class DemoPermissionsCommand implements BaseCommand {
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder().setName(this.name).setDescription(this.description);
@@ -68,7 +70,7 @@ export class DemoPermissionsCommand implements BaseCommand {
 
 // Example of different permission configurations:
 
-export class UserLevelCommand implements BaseCommand {
+export class UserLevelCommand extends BaseCommand {
   name = 'user-command';
   description = 'Available to all users';
   // No permissions = everyone can use
@@ -76,7 +78,9 @@ export class UserLevelCommand implements BaseCommand {
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder().setName(this.name).setDescription(this.description);
@@ -87,11 +91,11 @@ export class UserLevelCommand implements BaseCommand {
   }
 }
 
-export class RoleBasedCommand implements BaseCommand {
+export class RoleBasedCommand extends BaseCommand {
   name = 'role-command';
   description = 'Requires specific roles';
 
-  permissions = {
+  override permissions = {
     roles: ['123456789', '987654321'], // Example role IDs
     guildOnly: true,
   };
@@ -99,7 +103,9 @@ export class RoleBasedCommand implements BaseCommand {
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder().setName(this.name).setDescription(this.description);
@@ -110,18 +116,20 @@ export class RoleBasedCommand implements BaseCommand {
   }
 }
 
-export class OwnerOnlyCommand implements BaseCommand {
+export class OwnerOnlyCommand extends BaseCommand {
   name = 'owner-command';
   description = 'Bot owner only';
 
-  permissions = {
+  override permissions = {
     ownerOnly: true,
   };
 
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder().setName(this.name).setDescription(this.description);

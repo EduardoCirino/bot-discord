@@ -3,10 +3,10 @@ import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
 import { BaseCommand } from '../types';
 
-export class AdminInvitesCommand implements BaseCommand {
+export class AdminInvitesCommand extends BaseCommand {
   name = 'admin-invites';
   description = 'View all created invites (Admin only)';
-  permissions = {
+  override permissions = {
     level: 'admin' as const,
     guildOnly: true,
   };
@@ -14,7 +14,9 @@ export class AdminInvitesCommand implements BaseCommand {
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder().setName(this.name).setDescription(this.description);
@@ -45,7 +47,10 @@ export class AdminInvitesCommand implements BaseCommand {
         if (!invitesByCreator.has(invite.creatorId)) {
           invitesByCreator.set(invite.creatorId, []);
         }
-        invitesByCreator.get(invite.creatorId)!.push(invite);
+        const creatorInvites = invitesByCreator.get(invite.creatorId);
+        if (creatorInvites) {
+          creatorInvites.push(invite);
+        }
       }
 
       let description = '';

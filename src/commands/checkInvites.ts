@@ -3,14 +3,16 @@ import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
 import { BaseCommand } from '../types';
 
-export class CheckInvitesCommand implements BaseCommand {
+export class CheckInvitesCommand extends BaseCommand {
   name = 'check-invites';
   description = 'Check your invite statistics';
 
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder().setName(this.name).setDescription(this.description);

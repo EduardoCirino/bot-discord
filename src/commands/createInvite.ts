@@ -3,14 +3,16 @@ import { DatabaseService } from '../services/database';
 import { Logger } from '../services/logger';
 import { BaseCommand } from '../types';
 
-export class CreateInviteCommand implements BaseCommand {
+export class CreateInviteCommand extends BaseCommand {
   name = 'create-invite';
   description = 'Create a new invite link for tracking';
 
   constructor(
     private database: DatabaseService,
     private logger: Logger
-  ) {}
+  ) {
+    super();
+  }
 
   get data() {
     return new SlashCommandBuilder()
@@ -93,7 +95,7 @@ export class CreateInviteCommand implements BaseCommand {
         if (isNewInvite) {
           this.logger.inviteCreated(interaction.user.id, invite.code, channel.id);
           await interaction.reply({
-            content: `✅ Invite created successfully!\n**Code:** \`${invite.code}\`\n**Channel:** ${channel}\n**Max Uses:** ${maxUses || 'Unlimited'}\n**Expires:** ${expiresIn ? `In ${expiresIn} hours` : 'Never'}`,
+            content: `✅ Invite created successfully!\n**Code:** \`${invite.code}\`\n**Channel:** <#${channel.id}>\n**Max Uses:** ${maxUses || 'Unlimited'}\n**Expires:** ${expiresIn ? `In ${expiresIn} hours` : 'Never'}`,
             flags: 64,
           });
         } else {
@@ -103,7 +105,7 @@ export class CreateInviteCommand implements BaseCommand {
             inviteCode: invite.code,
           });
           await interaction.reply({
-            content: `ℹ️ You already have an invite with code \`${invite.code}\`.\n**Channel:** ${channel}\n**Max Uses:** ${maxUses || 'Unlimited'}\n**Expires:** ${expiresIn ? `In ${expiresIn} hours` : 'Never'}`,
+            content: `ℹ️ You already have an invite with code \`${invite.code}\`.\n**Channel:** <#${channel.id}>\n**Max Uses:** ${maxUses || 'Unlimited'}\n**Expires:** ${expiresIn ? `In ${expiresIn} hours` : 'Never'}`,
             flags: 64,
           });
         }
