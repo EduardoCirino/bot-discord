@@ -1,109 +1,40 @@
-import { Database } from 'bun:sqlite';
+import { eq, desc, count, sum, sql, and } from 'drizzle-orm';
+import { db } from '../db/connection';
+import { invites, inviteUsages } from '../db/schema';
 import type {
   InviteData,
   InviteUsage,
   UserStats,
   AdminInviteInfo,
   LeaderboardEntry,
-  DatabaseResult,
-  InviteUsageResult,
 } from '../types';
 
 export class DatabaseService {
-  private db: Database;
-
-  constructor(dbPath: string = './invites.db') {
-    this.db = new Database(dbPath);
-    this.initTables();
-  }
-
-  private initTables() {
-    // Create invites table
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS invites (
-        id TEXT PRIMARY KEY,
-        creator_id TEXT NOT NULL,
-        code TEXT NOT NULL UNIQUE,
-        uses INTEGER DEFAULT 0,
-        max_uses INTEGER,
-        expires_at DATETIME,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        channel_id TEXT NOT NULL
-      )
-    `);
-
-    // Create invite_usages table
-    this.db.run(`
-      CREATE TABLE IF NOT EXISTS invite_usages (
-        id TEXT PRIMARY KEY,
-        invite_id TEXT NOT NULL,
-        user_id TEXT NOT NULL,
-        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        left_at DATETIME,
-        is_active INTEGER DEFAULT 1,
-        FOREIGN KEY (invite_id) REFERENCES invites (id),
-        UNIQUE(invite_id, user_id)
-      )
-    `);
-
-    // Add unique constraint to existing tables if it doesn't exist
-    this.addConstraintsIfNeeded();
-  }
-
-  private addConstraintsIfNeeded() {
-    try {
-      // Create indexes for better performance
-      this.db.run(`CREATE INDEX IF NOT EXISTS idx_invites_creator_id ON invites(creator_id)`);
-      this.db.run(`CREATE INDEX IF NOT EXISTS idx_invites_code ON invites(code)`);
-      this.db.run(
-        `CREATE INDEX IF NOT EXISTS idx_invite_usages_invite_id ON invite_usages(invite_id)`
-      );
-      this.db.run(`CREATE INDEX IF NOT EXISTS idx_invite_usages_user_id ON invite_usages(user_id)`);
-      this.db.run(
-        `CREATE INDEX IF NOT EXISTS idx_invite_usages_is_active ON invite_usages(is_active)`
-      );
-    } catch (error) {
-      // Constraints might already exist, log but continue
-      console.warn('Some database constraints may already exist:', error);
-    }
-  }
-
-  // Invite operations
   async createInvite(invite: Omit<InviteData, 'id' | 'uses' | 'createdAt'>) {
     const id = crypto.randomUUID();
+
     try {
-      this.db.run(
-        `INSERT INTO invites (id, creator_id, code, max_uses, expires_at, channel_id)
-         VALUES (?, ?, ?, ?, ?, ?)`,
-        [
-          id,
-          invite.creatorId,
-          invite.code,
-          invite.maxUses || null,
-          invite.expiresAt?.toISOString() || null,
-          invite.channelId,
-        ]
-      );
+      await db.insert(invites).values({
+        id,
+        creatorId: invite.creatorId,
+        code: invite.code,
+        maxUses: invite.maxUses || null,
+        expiresAt: invite.expiresAt || null,
+        channelId: invite.channelId,
+      });
       return id;
     } catch (error: unknown) {
-      const sqliteError = error as { code?: string };
-      // Handle UNIQUE constraint violation on code
-      if (sqliteError.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-        // Check if it's a code conflict
+      if (error instanceof Error && error.message.includes('duplicate key')) {
         const existingInvite = await this.getInviteByCode(invite.code);
         if (existingInvite) {
-          // If the invite already exists and belongs to the same creator, return the existing ID
           if (existingInvite.creatorId === invite.creatorId) {
             return existingInvite.id;
           } else {
-            // If it belongs to a different creator, this is a genuine conflict
             throw new Error(
               `Invite code '${invite.code}' already exists and belongs to another user`
             );
           }
         }
-        // If no existing invite found, the constraint might be on a different field
-        // This shouldn't happen with our current schema, but let's re-throw
         throw new Error(`Unique constraint violation for invite code '${invite.code}'`);
       }
       throw error;
@@ -111,79 +42,94 @@ export class DatabaseService {
   }
 
   async getInviteByCode(code: string): Promise<InviteData | null> {
-    const result = this.db
-      .query('SELECT * FROM invites WHERE code = ?')
-      .get(code) as DatabaseResult | null;
-    if (!result) return null;
+    const result = await db.select().from(invites).where(eq(invites.code, code)).limit(1);
+
+    if (result.length === 0) return null;
+
+    const invite = result[0];
+    if (!invite) return null;
 
     return {
-      id: result.id,
-      creatorId: result.creator_id,
-      code: result.code,
-      uses: result.uses,
-      maxUses: result.max_uses || undefined,
-      expiresAt: result.expires_at ? new Date(result.expires_at) : undefined,
-      createdAt: new Date(result.created_at),
-      channelId: result.channel_id,
+      id: invite.id,
+      creatorId: invite.creatorId,
+      code: invite.code,
+      uses: invite.uses,
+      maxUses: invite.maxUses || undefined,
+      expiresAt: invite.expiresAt || undefined,
+      createdAt: invite.createdAt,
+      channelId: invite.channelId,
     };
   }
 
   async incrementInviteUses(inviteId: string) {
-    this.db.run('UPDATE invites SET uses = uses + 1 WHERE id = ?', [inviteId]);
+    await db
+      .update(invites)
+      .set({ uses: sql`${invites.uses} + 1` })
+      .where(eq(invites.id, inviteId));
   }
 
   async getUserInvites(userId: string): Promise<InviteData[]> {
-    const results = this.db
-      .query('SELECT * FROM invites WHERE creator_id = ?')
-      .all(userId) as DatabaseResult[];
-    return results.map(result => ({
-      id: result.id,
-      creatorId: result.creator_id,
-      code: result.code,
-      uses: result.uses,
-      maxUses: result.max_uses || undefined,
-      expiresAt: result.expires_at ? new Date(result.expires_at) : undefined,
-      createdAt: new Date(result.created_at),
-      channelId: result.channel_id,
+    const results = await db.select().from(invites).where(eq(invites.creatorId, userId));
+
+    return results.map(invite => ({
+      id: invite.id,
+      creatorId: invite.creatorId,
+      code: invite.code,
+      uses: invite.uses,
+      maxUses: invite.maxUses || undefined,
+      expiresAt: invite.expiresAt || undefined,
+      createdAt: invite.createdAt,
+      channelId: invite.channelId,
     }));
   }
 
-  // Usage operations
   async recordInviteUsage(inviteId: string, userId: string) {
-    // Check if this user has already been recorded for this invite
-    const existingUsage = this.db
-      .query('SELECT id, is_active FROM invite_usages WHERE invite_id = ? AND user_id = ?')
-      .get(inviteId, userId) as { id: string; is_active: number } | undefined;
+    const existingUsage = await db
+      .select({ id: inviteUsages.id, isActive: inviteUsages.isActive })
+      .from(inviteUsages)
+      .where(and(eq(inviteUsages.inviteId, inviteId), eq(inviteUsages.userId, userId)))
+      .limit(1);
 
-    if (existingUsage) {
-      // If user was previously inactive (left), reactivate them
-      if (!existingUsage.is_active) {
-        this.db.run('UPDATE invite_usages SET is_active = 1, left_at = NULL WHERE id = ?', [
-          existingUsage.id,
-        ]);
-        // Increment invite uses since user is rejoining
-        this.db.run('UPDATE invites SET uses = uses + 1 WHERE id = ?', [inviteId]);
+    if (existingUsage.length > 0) {
+      const usage = existingUsage[0];
+      if (!usage) {
+        throw new Error('Unexpected database state: usage record not found');
       }
-      return existingUsage.id;
+
+      if (!usage.isActive) {
+        await db
+          .update(inviteUsages)
+          .set({ isActive: true, leftAt: null })
+          .where(eq(inviteUsages.id, usage.id));
+
+        await this.incrementInviteUses(inviteId);
+      }
+      return usage.id;
     }
 
     const id = crypto.randomUUID();
     try {
-      this.db.run(
-        'INSERT INTO invite_usages (id, invite_id, user_id, is_active) VALUES (?, ?, ?, 1)',
-        [id, inviteId, userId]
-      );
+      await db.insert(inviteUsages).values({
+        id,
+        inviteId,
+        userId,
+        isActive: true,
+      });
       return id;
     } catch (error: unknown) {
-      const sqliteError = error as { code?: string };
-      // Handle any other potential constraint violations
-      if (sqliteError.code === 'SQLITE_CONSTRAINT_UNIQUE') {
-        // Double-check in case of race condition
-        const doubleCheck = this.db
-          .query('SELECT id FROM invite_usages WHERE invite_id = ? AND user_id = ?')
-          .get(inviteId, userId) as { id: string } | undefined;
-        if (doubleCheck) {
-          return doubleCheck.id;
+      if (error instanceof Error && error.message.includes('duplicate key')) {
+        const doubleCheck = await db
+          .select({ id: inviteUsages.id })
+          .from(inviteUsages)
+          .where(and(eq(inviteUsages.inviteId, inviteId), eq(inviteUsages.userId, userId)))
+          .limit(1);
+
+        if (doubleCheck.length > 0) {
+          const existingRecord = doubleCheck[0];
+          if (!existingRecord) {
+            throw new Error('Unexpected database state: record not found');
+          }
+          return existingRecord.id;
         }
       }
       throw error;
@@ -191,114 +137,119 @@ export class DatabaseService {
   }
 
   async getInviteUsages(inviteId: string): Promise<InviteUsage[]> {
-    const usages = this.db
-      .query('SELECT * FROM invite_usages WHERE invite_id = ?')
-      .all(inviteId) as InviteUsageResult[];
+    const usages = await db.select().from(inviteUsages).where(eq(inviteUsages.inviteId, inviteId));
+
     return usages.map(usage => ({
       id: usage.id,
-      inviteId: usage.invite_id,
-      userId: usage.user_id,
-      joinedAt: new Date(usage.joined_at),
-      leftAt: usage.left_at ? new Date(usage.left_at) : undefined,
-      isActive: Boolean(usage.is_active),
+      inviteId: usage.inviteId,
+      userId: usage.userId,
+      joinedAt: usage.joinedAt,
+      leftAt: usage.leftAt || undefined,
+      isActive: usage.isActive,
     }));
   }
 
   async markUserAsLeft(userId: string) {
-    const result = this.db.run(
-      'UPDATE invite_usages SET is_active = 0, left_at = CURRENT_TIMESTAMP WHERE user_id = ? AND is_active = 1',
-      [userId]
-    );
+    const result = await db
+      .update(inviteUsages)
+      .set({ isActive: false, leftAt: new Date() })
+      .where(and(eq(inviteUsages.userId, userId), eq(inviteUsages.isActive, true)))
+      .returning({ inviteId: inviteUsages.inviteId });
 
-    // Decrement invite uses for each invite this user was active in
-    const affectedUsages = this.db
-      .query('SELECT invite_id FROM invite_usages WHERE user_id = ? AND is_active = 0')
-      .all(userId) as { invite_id: string }[];
-
-    for (const usage of affectedUsages) {
-      this.db.run('UPDATE invites SET uses = MAX(0, uses - 1) WHERE id = ?', [usage.invite_id]);
+    for (const usage of result) {
+      await db
+        .update(invites)
+        .set({ uses: sql`GREATEST(0, ${invites.uses} - 1)` })
+        .where(eq(invites.id, usage.inviteId));
     }
 
-    return result.changes > 0;
+    return result.length > 0;
   }
 
   async getUserStats(userId: string): Promise<UserStats> {
-    const invites = await this.getUserInvites(userId);
-    const totalUses = invites.reduce((sum: number, invite: InviteData) => sum + invite.uses, 0);
-
-    // Calculate active uses (users who haven't left)
+    const userInvites = await this.getUserInvites(userId);
+    const totalUses = userInvites.reduce((sum: number, invite: InviteData) => sum + invite.uses, 0);
     const activeUses = await this.getActiveUsesForUser(userId);
 
     return {
       userId,
-      totalInvites: invites.length,
+      totalInvites: userInvites.length,
       totalUses,
       activeUses,
-      invites,
+      invites: userInvites,
     };
   }
 
   async getActiveUsesForUser(userId: string) {
-    const result = this.db
-      .query(
-        `
-      SELECT COUNT(*) as active_count
-      FROM invite_usages iu
-      JOIN invites i ON iu.invite_id = i.id
-      WHERE i.creator_id = ? AND iu.is_active = 1
-    `
-      )
-      .get(userId) as { active_count: number } | undefined;
+    const result = await db
+      .select({ activeCount: count() })
+      .from(inviteUsages)
+      .innerJoin(invites, eq(inviteUsages.inviteId, invites.id))
+      .where(and(eq(invites.creatorId, userId), eq(inviteUsages.isActive, true)));
 
-    return result?.active_count || 0;
+    const firstResult = result[0];
+    return firstResult?.activeCount || 0;
   }
 
   async getLeaderboard(limit: number = 10): Promise<LeaderboardEntry[]> {
-    const results = this.db
-      .query(
-        `
-      SELECT
-        i.creator_id,
-        COUNT(DISTINCT i.id) as total_invites,
-        SUM(i.uses) as total_uses,
-        COUNT(CASE WHEN iu.is_active = 1 THEN 1 END) as active_uses
-      FROM invites i
-      LEFT JOIN invite_usages iu ON i.id = iu.invite_id
-      GROUP BY i.creator_id
-      ORDER BY total_uses DESC
-      LIMIT ?
-    `
-      )
-      .all(limit) as LeaderboardEntry[];
+    const results = await db
+      .select({
+        creator_id: invites.creatorId,
+        total_invites: count(invites.id),
+        total_uses: sum(invites.uses),
+        active_uses: count(sql`CASE WHEN ${inviteUsages.isActive} = true THEN 1 END`),
+      })
+      .from(invites)
+      .leftJoin(inviteUsages, eq(invites.id, inviteUsages.inviteId))
+      .groupBy(invites.creatorId)
+      .orderBy(desc(sum(invites.uses)))
+      .limit(limit);
 
-    return results;
+    return results.map(result => ({
+      creator_id: result.creator_id,
+      total_invites: Number(result.total_invites),
+      total_uses: Number(result.total_uses) || 0,
+      active_uses: Number(result.active_uses) || 0,
+    }));
   }
 
   async getAllInvitesForAdmin(): Promise<AdminInviteInfo[]> {
-    const invites = this.db
-      .query(
-        `
-      SELECT
-        i.*,
-        COUNT(CASE WHEN iu.is_active = 1 THEN 1 END) as active_uses
-      FROM invites i
-      LEFT JOIN invite_usages iu ON i.id = iu.invite_id
-      GROUP BY i.id
-      ORDER BY i.created_at DESC
-    `
+    const results = await db
+      .select({
+        id: invites.id,
+        creatorId: invites.creatorId,
+        code: invites.code,
+        uses: invites.uses,
+        maxUses: invites.maxUses,
+        expiresAt: invites.expiresAt,
+        createdAt: invites.createdAt,
+        channelId: invites.channelId,
+        activeUses: count(sql`CASE WHEN ${inviteUsages.isActive} = true THEN 1 END`),
+      })
+      .from(invites)
+      .leftJoin(inviteUsages, eq(invites.id, inviteUsages.inviteId))
+      .groupBy(
+        invites.id,
+        invites.creatorId,
+        invites.code,
+        invites.uses,
+        invites.maxUses,
+        invites.expiresAt,
+        invites.createdAt,
+        invites.channelId
       )
-      .all() as Array<DatabaseResult & { active_uses: number }>;
+      .orderBy(desc(invites.createdAt));
 
-    return invites.map(invite => ({
+    return results.map(invite => ({
       id: invite.id,
-      creatorId: invite.creator_id,
+      creatorId: invite.creatorId,
       code: invite.code,
       uses: invite.uses,
-      activeUses: invite.active_uses || 0,
-      maxUses: invite.max_uses || undefined,
-      expiresAt: invite.expires_at ? new Date(invite.expires_at) : undefined,
-      createdAt: new Date(invite.created_at),
-      channelId: invite.channel_id,
+      activeUses: Number(invite.activeUses) || 0,
+      maxUses: invite.maxUses || undefined,
+      expiresAt: invite.expiresAt || undefined,
+      createdAt: invite.createdAt,
+      channelId: invite.channelId,
     }));
   }
 
@@ -314,7 +265,88 @@ export class DatabaseService {
     };
   }
 
+  async getInviteWithUsagesRelation(inviteId: string) {
+    try {
+      const result = await db.query.invites.findFirst({
+        where: eq(invites.id, inviteId),
+        with: {
+          usages: true,
+        },
+      });
+
+      if (!result) return null;
+
+      return {
+        invite: {
+          id: result.id,
+          creatorId: result.creatorId,
+          code: result.code,
+          uses: result.uses,
+          maxUses: result.maxUses || undefined,
+          expiresAt: result.expiresAt || undefined,
+          createdAt: result.createdAt,
+          channelId: result.channelId,
+        },
+        usages: result.usages.map(usage => ({
+          id: usage.id,
+          inviteId: usage.inviteId,
+          userId: usage.userId,
+          joinedAt: usage.joinedAt,
+          leftAt: usage.leftAt || undefined,
+          isActive: usage.isActive,
+        })),
+      };
+    } catch (error) {
+      console.error('Error fetching invite with usages relation:', error);
+      // Fallback to original method if relation query fails
+      return this.getInviteDetails(inviteId);
+    }
+  }
+
+  async getUserInvitesWithUsages(userId: string) {
+    try {
+      const results = await db.query.invites.findMany({
+        where: eq(invites.creatorId, userId),
+        with: {
+          usages: {
+            where: eq(inviteUsages.isActive, true),
+          },
+        },
+      });
+
+      return results.map(invite => ({
+        invite: {
+          id: invite.id,
+          creatorId: invite.creatorId,
+          code: invite.code,
+          uses: invite.uses,
+          maxUses: invite.maxUses || undefined,
+          expiresAt: invite.expiresAt || undefined,
+          createdAt: invite.createdAt,
+          channelId: invite.channelId,
+        },
+        activeUsages: invite.usages.map(usage => ({
+          id: usage.id,
+          inviteId: usage.inviteId,
+          userId: usage.userId,
+          joinedAt: usage.joinedAt,
+          leftAt: usage.leftAt || undefined,
+          isActive: usage.isActive,
+        })),
+      }));
+    } catch (error) {
+      console.error('Error fetching user invites with usages:', error);
+      // Fallback to original method if relation query fails
+      const inviteResults = await this.getUserInvites(userId);
+      return inviteResults.map(invite => ({
+        invite,
+        activeUsages: [],
+      }));
+    }
+  }
+
   close() {
-    this.db.close();
+    // Drizzle with postgres.js handles connection pooling automatically
+    // No explicit close needed for normal operations
   }
 }
