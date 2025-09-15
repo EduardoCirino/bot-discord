@@ -27,23 +27,15 @@ export class InviteCreateHandler implements Event<Events.InviteCreate> {
         return;
       }
 
-      // Check if this invite was already created recently (within last 5 seconds)
-      // This prevents double-storage when the command creates an invite
+      // Check if this invite already exists in our database
       const existingInvite = await this.database.getInviteByCode(invite.code);
       if (existingInvite) {
-        const createdAt = new Date(existingInvite.createdAt);
-        const now = new Date();
-        const timeDiff = now.getTime() - createdAt.getTime();
-
-        // If the invite was created within the last 5 seconds, skip storing it again
-        if (timeDiff < 5000) {
-          this.logger.debug('Skipping recently created invite to prevent double storage', {
-            inviteCode: invite.code,
-            existingCreator: existingInvite.creatorId,
-            timeDiff,
-          });
-          return;
-        }
+        this.logger.debug('Invite already exists in database', {
+          inviteCode: invite.code,
+          existingCreator: existingInvite.creatorId,
+          newCreator: invite.inviterId,
+        });
+        return;
       }
 
       await this.database.createInvite({
